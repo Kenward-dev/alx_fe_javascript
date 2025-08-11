@@ -6,23 +6,23 @@ function loadQuotes() {
         try {
             const parsed = JSON.parse(stored);
             quotes = Array.isArray(parsed) ? parsed : [];
-            } catch {
+        } catch {
             quotes = [];
         }
     } else {
         quotes = [
-        { text: "No matter how long the night, the day will surely break.", category: "Proverb" },
-        { text: "When the roots of a tree begin to decay, it spreads death to the branches.", category: "Proverb" },
-        { text: "If you want to go fast, go alone. If you want to go far, go together.", category: "Proverb" },
-        { text: "When the drumbeat changes, the dance must also change.", category: "Proverb" },
-        { text: "Wisdom is like a baobab tree; no one individual can embrace it.", category: "Proverb" },
-        { text: "The child who is not embraced by the village will burn it down to feel its warmth.", category: "Proverb" },
-        { text: "No food for a lazy man.", category: "Popular Saying" },
-        { text: "Cut your coat according to your size.", category: "Popular Saying" },
-        { text: "The river that forgets its source will surely dry up.", category: "Proverb" },
-        { text: "When the going gets tough, the tough get going.", category: "Motivation" }
-        ];
-        saveQuotes();
+            { text: "No matter how long the night, the day will surely break.", category: "Proverb" },
+            { text: "When the roots of a tree begin to decay, it spreads death to the branches.", category: "Proverb" },
+            { text: "If you want to go fast, go alone. If you want to go far, go together.", category: "Proverb" },
+            { text: "When the drumbeat changes, the dance must also change.", category: "Proverb" },
+            { text: "Wisdom is like a baobab tree; no one individual can embrace it.", category: "Proverb" },
+            { text: "The child who is not embraced by the village will burn it down to feel its warmth.", category: "Proverb" },
+            { text: "No food for a lazy man.", category: "Popular Saying" },
+            { text: "Cut your coat according to your size.", category: "Popular Saying" },
+            { text: "The river that forgets its source will surely dry up.", category: "Proverb" },
+            { text: "When the going gets tough, the tough get going.", category: "Motivation" }
+            ];
+            saveQuotes();
     }
 }
 
@@ -30,25 +30,33 @@ function saveQuotes() {
     localStorage.setItem("quotes", JSON.stringify(quotes));
 }
 
+function getFilteredQuotes() {
+    const filter = document.getElementById("categoryFilter");
+    if (!filter || filter.value === "all") return quotes;
+    return quotes.filter(q => q.category.toLowerCase() === filter.value.toLowerCase());
+}
+
 function showRandomQuote() {
     const quoteDisplay = document.getElementById("quoteDisplay");
     if (!quoteDisplay) return;
-    if (quotes.length === 0) {
-        quoteDisplay.innerHTML = "<em>No quotes available.</em>";
+
+    const filtered = getFilteredQuotes();
+    if (filtered.length === 0) {
+        quoteDisplay.innerHTML = "<em>No quotes available for this category.</em>";
         return;
     }
-    const quoteIndex = Math.floor(Math.random() * quotes.length);
-    const q = quotes[quoteIndex];
+    const idx = Math.floor(Math.random() * filtered.length);
+    const q = filtered[idx];
     quoteDisplay.innerHTML = `"${q.text}"<span class="category">— ${q.category}</span>`;
     sessionStorage.setItem("lastQuote", JSON.stringify(q));
 }
 
 function addQuote() {
-    const quoteText = document.getElementById("newQuoteText");
-    const categoryText = document.getElementById("newQuoteCategory");
-    if (!quoteText || !categoryText) return;
-    const txt = quoteText.value.trim();
-    const cat = categoryText.value.trim();
+    const txtEl = document.getElementById("newQuoteText");
+    const catEl = document.getElementById("newQuoteCategory");
+    if (!txtEl || !catEl) return;
+    const txt = txtEl.value.trim();
+    const cat = catEl.value.trim();
     if (!txt || !cat) {
         alert("Please enter both the quote and its category.");
         return;
@@ -56,10 +64,11 @@ function addQuote() {
     const newQ = { text: txt, category: cat };
     quotes.push(newQ);
     saveQuotes();
+    populateCategories();
     document.getElementById("quoteDisplay").innerHTML = `"${txt}"<span class="category">— ${cat}</span>`;
     sessionStorage.setItem("lastQuote", JSON.stringify(newQ));
-    quoteText.value = "";
-    categoryText.value = "";
+    txtEl.value = "";
+    catEl.value = "";
 }
 
 function createAddQuoteForm() {
@@ -86,6 +95,23 @@ function createAddQuoteForm() {
     } else {
         document.body.appendChild(container);
     }
+}
+
+function populateCategories() {
+    const select = document.getElementById("categoryFilter");
+    if (!select) return;
+    const cats = [...new Set(quotes.map(q => q.category))].sort();
+    select.innerHTML = `<option value="all">All Categories</option>`;
+    cats.forEach(cat => {
+        const opt = document.createElement("option");
+        opt.value = cat;
+        opt.textContent = cat;
+        select.appendChild(opt);
+    });
+}
+
+function filterQuotes() {
+    showRandomQuote();
 }
 
 function exportToJsonFile() {
@@ -116,19 +142,22 @@ function importFromJsonFile(event) {
             alert("No valid quotes found in the file.");
             return;
         }
-        quotes.push(...filtered);
-        saveQuotes();
-        alert("Quotes imported successfully!");
-        showRandomQuote();
-        } catch {
-            alert("Failed to import quotes. Ensure the JSON is an array of {text, category} objects.");
-        }
-    };
-    reader.readAsText(file);
+      quotes.push(...filtered);
+      saveQuotes();
+      populateCategories();
+      alert("Quotes imported successfully!");
+      showRandomQuote();
+    } catch {
+        alert("Failed to import quotes. Ensure the JSON is an array of {text, category} objects.");
+    }
+  };
+  reader.readAsText(file);
 }
 
-loadQuotes();
-createAddQuoteForm();
+    loadQuotes();
+    createAddQuoteForm();
+    populateCategories();
+
 const btn = document.getElementById("newQuote");
 if (btn) btn.addEventListener("click", showRandomQuote);
 const exportBtn = document.getElementById("exportQuotes");
