@@ -98,15 +98,15 @@ function createAddQuoteForm() {
 }
 
 function populateCategories() {
-    const select = document.getElementById("categoryFilter");
-    if (!select) return;
+    const selectedCategory = document.getElementById("categoryFilter");
+    if (!selectedCategory) return;
     const cats = [...new Set(quotes.map(q => q.category))].sort();
-    select.innerHTML = `<option value="all">All Categories</option>`;
+    selectedCategory.innerHTML = `<option value="all">All Categories</option>`;
     cats.forEach(cat => {
         const opt = document.createElement("option");
         opt.value = cat;
         opt.textContent = cat;
-        select.appendChild(opt);
+        selectedCategory.appendChild(opt);
     });
 }
 
