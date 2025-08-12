@@ -81,7 +81,7 @@ async function fetchQuotesFromServer(syncStatus) {
     }
 }
 
-async function postQuoteToServer(quote, syncStatus) {
+async function syncQuotes(quote, syncStatus) {
     try {
         if (syncStatus) syncStatus.textContent = "Sync status: Posting new quote to server...";
         const res = await fetch("https://jsonplaceholder.typicode.com/posts", {
@@ -117,7 +117,7 @@ function addQuote(syncStatus) {
     document.getElementById("quoteDisplay").innerHTML = `"${txt}"<span class="category">— ${cat}</span>`;
     sessionStorage.setItem("lastQuote", JSON.stringify(newQ));
 
-    postQuoteToServer(newQ, syncStatus);
+    syncQuotes(newQ, syncStatus);
 
     txtEl.value = "";
     catEl.value = "";
