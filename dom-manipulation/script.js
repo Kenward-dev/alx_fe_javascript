@@ -53,7 +53,7 @@ function showRandomQuote() {
     sessionStorage.setItem("lastQuote", JSON.stringify(q));
 }
 
-async function fetchQuoteFromAPI() {
+async function fetchQuotesFromServer() {
     try {
         if (syncStatus) syncStatus.textContent = "Sync status: Fetching quote from server...";
         const res = await fetch("https://api.quotable.io/random");
@@ -184,7 +184,6 @@ function importFromJsonFile(event) {
     reader.readAsText(file);
 }
 
-// Initial load
 loadQuotes();
 createAddQuoteForm();
 populateCategories();
@@ -197,7 +196,7 @@ const importEl = document.getElementById("importFile");
 if (importEl) importEl.addEventListener("change", importFromJsonFile);
 
 const manualSyncBtn = document.getElementById("manualSync");
-if (manualSyncBtn) manualSyncBtn.addEventListener("click", fetchQuoteFromAPI);
+if (manualSyncBtn) manualSyncBtn.addEventListener("click", fetchQuotesFromServer);
 
 const last = sessionStorage.getItem("lastQuote");
 if (last) {
