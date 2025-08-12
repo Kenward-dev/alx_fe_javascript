@@ -237,4 +237,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
         showRandomQuote();
     }
+
+    setInterval(() => {
+        fetchQuotesFromServer(syncStatus);
+    }, 60000);
 });
