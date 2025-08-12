@@ -1,7 +1,5 @@
 let quotes = [];
 
-const syncStatus = document.getElementById("syncStatus");
-
 function loadQuotes() {
     const stored = localStorage.getItem("quotes");
     if (stored) {
@@ -53,18 +51,16 @@ function showRandomQuote() {
     sessionStorage.setItem("lastQuote", JSON.stringify(q));
 }
 
-async function fetchQuotesFromServer() {
+async function fetchQuotesFromServer(syncStatus) {
     try {
-        if (syncStatus) syncStatus.textContent = "Sync status: Fetching from server...";
+        if (syncStatus) syncStatus.textContent = "Sync status: Fetching quote from server...";
         const res = await fetch("https://jsonplaceholder.typicode.com/posts");
-        if (!res.ok) throw new Error("Failed to fetch data");
+        if (!res.ok) throw new Error("Failed to fetch quote");
         const data = await res.json();
 
-        const randomPost = data[Math.floor(Math.random() * data.length)];
-        const newQuote = { 
-            text: randomPost.body, 
-            category: `User ${randomPost.userId}` 
-        };
+        const post = data[Math.floor(Math.random() * data.length)];
+        const category = post.title ? post.title.split(" ")[0] : "Uncategorized";
+        const newQuote = { text: post.body, category };
 
         const exists = quotes.some(q => q.text === newQuote.text && q.category === newQuote.category);
         if (!exists) {
@@ -74,19 +70,37 @@ async function fetchQuotesFromServer() {
             document.getElementById("quoteDisplay").innerHTML = `"${newQuote.text}"<span class="category">— ${newQuote.category}</span>`;
             sessionStorage.setItem("lastQuote", JSON.stringify(newQuote));
             if (syncStatus) syncStatus.textContent = "Sync status: New quote fetched from server";
-            setTimeout(() => { if (syncStatus) syncStatus.textContent = "Sync status: Idle"; }, 3500);
         } else {
-            if (syncStatus) syncStatus.textContent = "Sync status: No new quote (duplicate)";
-            setTimeout(() => { if (syncStatus) syncStatus.textContent = "Sync status: Idle"; }, 2500);
+            if (syncStatus) syncStatus.textContent = "Sync status: No new quote (already have this one)";
         }
     } catch (err) {
-        if (syncStatus) syncStatus.textContent = "Sync status: Failed to fetch";
+        if (syncStatus) syncStatus.textContent = "Sync status: Failed to fetch quote";
         console.error(err);
-        setTimeout(() => { if (syncStatus) syncStatus.textContent = "Sync status: Idle"; }, 3500);
+    } finally {
+        setTimeout(() => { if (syncStatus) syncStatus.textContent = "Sync status: Idle"; }, 3000);
     }
 }
 
-function addQuote() {
+async function postQuoteToServer(quote, syncStatus) {
+    try {
+        if (syncStatus) syncStatus.textContent = "Sync status: Posting new quote to server...";
+        const res = await fetch("https://jsonplaceholder.typicode.com/posts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(quote)
+        });
+        if (!res.ok) throw new Error("Failed to post quote");
+        await res.json();
+        if (syncStatus) syncStatus.textContent = "Sync status: Quote posted to server";
+    } catch (err) {
+        if (syncStatus) syncStatus.textContent = "Sync status: Failed to post quote";
+        console.error(err);
+    } finally {
+        setTimeout(() => { if (syncStatus) syncStatus.textContent = "Sync status: Idle"; }, 3000);
+    }
+}
+
+function addQuote(syncStatus) {
     const txtEl = document.getElementById("newQuoteText");
     const catEl = document.getElementById("newQuoteCategory");
     if (!txtEl || !catEl) return;
@@ -102,11 +116,14 @@ function addQuote() {
     populateCategories();
     document.getElementById("quoteDisplay").innerHTML = `"${txt}"<span class="category">— ${cat}</span>`;
     sessionStorage.setItem("lastQuote", JSON.stringify(newQ));
+
+    postQuoteToServer(newQ, syncStatus);
+
     txtEl.value = "";
     catEl.value = "";
 }
 
-function createAddQuoteForm() {
+function createAddQuoteForm(syncStatus) {
     const container = document.createElement("div");
     container.id = "addQuoteForm";
     const inputText = document.createElement("input");
@@ -120,7 +137,7 @@ function createAddQuoteForm() {
     const addButton = document.createElement("button");
     addButton.type = "button";
     addButton.textContent = "Add Quote";
-    addButton.addEventListener("click", addQuote);
+    addButton.addEventListener("click", () => addQuote(syncStatus));
     container.appendChild(inputText);
     container.appendChild(inputCategory);
     container.appendChild(addButton);
@@ -166,7 +183,7 @@ function importFromJsonFile(event) {
     const file = event && event.target && event.target.files && event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const imported = JSON.parse(e.target.result);
             if (!Array.isArray(imported)) throw new Error("Invalid format");
@@ -189,29 +206,35 @@ function importFromJsonFile(event) {
     reader.readAsText(file);
 }
 
-loadQuotes();
-createAddQuoteForm();
-populateCategories();
+document.addEventListener("DOMContentLoaded", () => {
+    const syncStatus = document.getElementById("syncStatus");
 
-const btn = document.getElementById("newQuote");
-if (btn) btn.addEventListener("click", showRandomQuote);
-const exportBtn = document.getElementById("exportQuotes");
-if (exportBtn) exportBtn.addEventListener("click", exportToJsonFile);
-const importEl = document.getElementById("importFile");
-if (importEl) importEl.addEventListener("change", importFromJsonFile);
+    loadQuotes();
+    createAddQuoteForm(syncStatus);
+    populateCategories();
 
-const manualSyncBtn = document.getElementById("manualSync");
-if (manualSyncBtn) manualSyncBtn.addEventListener("click", fetchQuotesFromServer);
+    const btn = document.getElementById("newQuote");
+    if (btn) btn.addEventListener("click", showRandomQuote);
 
-const last = sessionStorage.getItem("lastQuote");
-if (last) {
-    try {
-        const q = JSON.parse(last);
-        const display = document.getElementById("quoteDisplay");
-        if (display) display.innerHTML = `"${q.text}"<span class="category">— ${q.category}</span>`;
-    } catch {
+    const exportBtn = document.getElementById("exportQuotes");
+    if (exportBtn) exportBtn.addEventListener("click", exportToJsonFile);
+
+    const importEl = document.getElementById("importFile");
+    if (importEl) importEl.addEventListener("change", importFromJsonFile);
+
+    const manualSyncBtn = document.getElementById("manualSync");
+    if (manualSyncBtn) manualSyncBtn.addEventListener("click", () => fetchQuotesFromServer(syncStatus));
+
+    const last = sessionStorage.getItem("lastQuote");
+    if (last) {
+        try {
+            const q = JSON.parse(last);
+            const display = document.getElementById("quoteDisplay");
+            if (display) display.innerHTML = `"${q.text}"<span class="category">— ${q.category}</span>`;
+        } catch {
+            showRandomQuote();
+        }
+    } else {
         showRandomQuote();
     }
-} else {
-    showRandomQuote();
-}
+});
