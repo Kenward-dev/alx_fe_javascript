@@ -91,7 +91,7 @@ async function syncQuotes(quote, syncStatus) {
         });
         if (!res.ok) throw new Error("Failed to post quote");
         await res.json();
-        if (syncStatus) syncStatus.textContent = "Sync status: Quote posted to server";
+        if (syncStatus) syncStatus.textContent = "Sync status: Quotes synced with server!";
     } catch (err) {
         if (syncStatus) syncStatus.textContent = "Sync status: Failed to post quote";
         console.error(err);
