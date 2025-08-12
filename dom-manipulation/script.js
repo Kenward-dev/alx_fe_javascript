@@ -55,12 +55,17 @@ function showRandomQuote() {
 
 async function fetchQuotesFromServer() {
     try {
-        if (syncStatus) syncStatus.textContent = "Sync status: Fetching quote from server...";
-        const res = await fetch("https://api.quotable.io/random");
-        if (!res.ok) throw new Error("Failed to fetch quote");
+        if (syncStatus) syncStatus.textContent = "Sync status: Fetching from server...";
+        const res = await fetch("https://jsonplaceholder.typicode.com/posts");
+        if (!res.ok) throw new Error("Failed to fetch data");
         const data = await res.json();
-        const category = Array.isArray(data.tags) && data.tags.length > 0 ? data.tags[0] : "Uncategorized";
-        const newQuote = { text: data.content, category };
+
+        const randomPost = data[Math.floor(Math.random() * data.length)];
+        const newQuote = { 
+            text: randomPost.body, 
+            category: `User ${randomPost.userId}` 
+        };
+
         const exists = quotes.some(q => q.text === newQuote.text && q.category === newQuote.category);
         if (!exists) {
             quotes.push(newQuote);
@@ -71,11 +76,11 @@ async function fetchQuotesFromServer() {
             if (syncStatus) syncStatus.textContent = "Sync status: New quote fetched from server";
             setTimeout(() => { if (syncStatus) syncStatus.textContent = "Sync status: Idle"; }, 3500);
         } else {
-            if (syncStatus) syncStatus.textContent = "Sync status: No new quote (already have this one)";
+            if (syncStatus) syncStatus.textContent = "Sync status: No new quote (duplicate)";
             setTimeout(() => { if (syncStatus) syncStatus.textContent = "Sync status: Idle"; }, 2500);
         }
     } catch (err) {
-        if (syncStatus) syncStatus.textContent = "Sync status: Failed to fetch quote";
+        if (syncStatus) syncStatus.textContent = "Sync status: Failed to fetch";
         console.error(err);
         setTimeout(() => { if (syncStatus) syncStatus.textContent = "Sync status: Idle"; }, 3500);
     }
